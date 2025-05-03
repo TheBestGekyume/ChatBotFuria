@@ -8,7 +8,6 @@
   .chat-window {
     width: 100%;
     color: #fff;
-    // overflow: hidden;
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -20,7 +19,6 @@
     flex: 1;
     overflow-y: auto;
     border-left: 2px solid #00346c;
-    // border-bottom: 1px solid #333;
 
     .message {
       display: flex;
@@ -40,6 +38,15 @@
 
       &.bot {
         justify-content: flex-start;
+
+        a {
+          color: #007bff;
+          transition: 300ms;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
         
         p {
           background-color: #222;
@@ -54,6 +61,68 @@
           object-position: top;
           border-radius: 50%;
           border: 2px solid #007bff;
+        }
+
+        /* Estilos específicos para a formação do time */
+        .lineup-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 15px;
+          width: 100%;
+          margin-top: 10px;
+          background-color: #222;
+          padding: 15px;
+          border-radius: 0.75rem;
+          border: 1px solid #333;
+        }
+
+        .player-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background: #1a1a1a;
+          border-radius: 8px;
+          padding: 10px;
+          transition: transform 0.2s;
+          border: 1px solid #333;
+
+          &:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+          }
+        }
+
+        .player-image {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid #f7931a;
+          background-color: #333;
+        }
+
+        .player-info {
+          display: flex;
+          align-items: center;
+          margin-top: 8px;
+          width: 100%;
+          justify-content: center;
+        }
+
+        .player-name {
+          color: white;
+          font-size: 14px;
+          margin-right: 5px;
+          text-align: center;
+          font-weight: 500;
+        }
+
+        .player-flag {
+          width: 20px;
+          height: 15px;
+          border-radius: 2px;
+          box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+          border: none;
         }
       }
 
@@ -91,7 +160,6 @@
     padding-top: 0;
     background-color: #111;
     gap: 10px;
-    // border-top: 1px solid #333;
     border-left: 2px solid #00346c;
 
     input {
@@ -132,5 +200,4 @@
       }
     }
   }
-
 }
