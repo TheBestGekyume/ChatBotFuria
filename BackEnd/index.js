@@ -1,16 +1,23 @@
 const express = require('express');
 const cors = require('cors');
+const app = express();
 
-const lineupRoutes = require('./routes/scraperRoutes');
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials:true
+}));
+
+// Importe as rotas DEPOIS da configuração do CORS
+const scraperRoutes = require('./routes/scraperRoutes');
 const userRoutes = require('./routes/userRoutes');
 
-const app = express();
-app.use(cors());
-app.use(express.json()); // Para permitir o envio de JSON no corpo das requisições
+app.use(express.json());
 
-// Rotas da API
-app.use('/api/scraper', lineupRoutes);  // Rota de Scraper
-app.use('/api/users', userRoutes);      // Rota de CRUD de Usuários
+// Certifique-se que os paths estão corretos
+app.use('/api/scraper', scraperRoutes);
+app.use('/api/users', userRoutes);
 
 const PORT = 3000;
 app.listen(PORT, () => {
