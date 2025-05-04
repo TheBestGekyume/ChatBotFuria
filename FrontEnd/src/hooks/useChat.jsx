@@ -287,6 +287,17 @@ export const useChat = () => {
         }
     };
 
+    const handleOptionSelect = async (optionText) => {
+        const selectedOption = options.find(opt => opt.text === optionText);
+        if (selectedOption) {
+            // Adiciona a mensagem do usuário diretamente
+            setMessages(prev => [...prev, { text: optionText, from: 'user' }]);
+            
+            // Processa a mensagem imediatamente
+            await fetchData(selectedOption.action);
+        }
+    };
+
     return {
         messages,
         sendMessage,
@@ -294,6 +305,7 @@ export const useChat = () => {
         inputValue,
         setInputValue,
         loading,
-        options
+        options,
+        handleOptionSelect 
     };
 };
