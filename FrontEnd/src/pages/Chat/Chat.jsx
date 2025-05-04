@@ -1,5 +1,3 @@
-
-// components/Chat.jsx
 import React, { useRef } from 'react';
 import Message from '../../components/Message/Message';
 import ChatInput from '../../components/ChatInput/ChatInput';
@@ -8,20 +6,18 @@ import { useChat } from '../../hooks/useChat';
 import './Chat.scss';
 
 const Chat = () => {
-
     const {
         messages,
-        setMessages,
         sendMessage,
         handleKeyPress,
         inputValue,
         setInputValue,
-        options,
-        handleOptionSelect,
-        fetchData,
-        loading
+        loading,
+        authStep,
+        skipAuth,
+        handleSkipAuth,
+        handleOptionSelect
     } = useChat();
-
 
     return (
         <div id="chat">
@@ -30,21 +26,32 @@ const Chat = () => {
                     {messages.map((message, index) => (
                         <Message
                             key={index}
-                            index={index}
                             message={message}
-                            onOptionClick={(handleOptionSelect)}
+                            index={index}
+                            onOptionClick={handleOptionSelect} // Passe a função aqui
                         />
                     ))}
-
                     {loading && <Loading />}
 
+                    {authStep === 'email' && !skipAuth && (
+                        <button className='option-button'
+                            onClick={handleSkipAuth}>
+                            Continuar sem login
+                        </button>
+                    )}
                 </div>
+
 
                 <ChatInput
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyPress}
                     onSend={sendMessage}
+                    placeholder={
+                        authStep === 'email' ? 'Digite seu email ou "cadastrar" ou "continuar sem login"' :
+                            authStep === 'password' ? 'Digite sua senha' :
+                                'Digite uma mensagem'
+                    }
                 />
             </div>
         </div>
