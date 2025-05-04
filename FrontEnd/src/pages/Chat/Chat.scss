@@ -18,13 +18,15 @@
     background-color: #151515;
     flex: 1;
     overflow-y: auto;
-    border-left: 2px solid #00346c;
 
     .message {
+      
       display: flex;
       align-items: flex-end;
       margin-block: 20px;
       gap: 10px;
+      animation: messageIn 0.3s ease-out forwards;
+      opacity: 0; // Começa invisível para a animação
            
       &.user {
         justify-content: flex-end;
@@ -54,8 +56,8 @@
           border-radius: 0.75rem 0.75rem 0.75rem 0;
         }
 
-        img {
-          width: 50px;
+        .furioso-img {
+          min-width: 50px;
           height: 50px;
           object-fit: cover;
           object-position: top;
@@ -65,8 +67,8 @@
 
         /* Estilos específicos para a formação do time */
         .lineup-container {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          display: flex;
+          flex-wrap: wrap;
           gap: 15px;
           width: 100%;
           margin-top: 10px;
@@ -83,12 +85,12 @@
           background: #1a1a1a;
           border-radius: 8px;
           padding: 10px;
-          transition: transform 0.2s;
+          transition: 300ms;
           border: 1px solid #333;
 
           &:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 0px 4px 2px rgba(0, 123, 255, 0.2);
           }
         }
 
@@ -97,7 +99,7 @@
           height: 80px;
           border-radius: 50%;
           object-fit: cover;
-          border: 2px solid #f7931a;
+          border: none;
           background-color: #333;
         }
 
@@ -156,25 +158,25 @@
 
   .chat-input-container {
     display: flex;
-    padding: 20px;
-    padding-top: 0;
+    padding: 15px;
     background-color: #111;
+    
     gap: 10px;
-    border-left: 2px solid #00346c;
 
     input {
       flex: 1;
-      padding: 12px 15px;
+      padding: 0px 15px;
       border: 1px solid #333;
       border-radius: 0.5rem;
       background-color: #222;
       color: #fff;
       font-size: 1rem;
       outline: none;
-      transition: border 0.3s ease;
+      transition: 500ms ease;
 
       &:focus {
         border-color: #007bff;
+        background-color: #000;
       }
 
       &::placeholder {
@@ -183,7 +185,7 @@
     }
 
     button {
-      padding: 0 25px;
+      padding: 20px 25px;
       background-color: #007bff;
       color: #fff;
       border: none;
@@ -199,5 +201,16 @@
         background-color: #0056b3;
       }
     }
+  }
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
