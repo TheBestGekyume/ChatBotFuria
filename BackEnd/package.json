@@ -23,6 +23,7 @@
     "mysql2": "^3.14.1",
     "path-to-regexp": "^6.2.0",
     "puppeteer": "^24.8.0",
-    "serve-static": "^2.2.0"
+    "serve-static": "^2.2.0",
+    "serverless-http": "^3.2.0"
   }
 }
