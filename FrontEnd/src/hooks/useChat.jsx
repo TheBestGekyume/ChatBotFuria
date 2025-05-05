@@ -40,18 +40,18 @@ export const useChat = () => {
         {
             text: 'Próximos jogos',
             action: 'upcoming',
-            keywords: ['proximo', 'jogos', 'futuro', 'calendario', 'agenda', 'partidas',
-                'joga', 'hoje', 'amanha']
+            keywords: ['proximo', 'futuro', 'calendario', 'agenda', 'partidas',
+             'hoje', 'amanha']
         },
         {
             text: 'Últimos Jogos',
             action: 'pastmatches',
-            keywords: ['ultimos', 'jogos', 'resultados', 'historico', 'passados']
+            keywords: ['ultimos', 'resultados', 'historico', 'passados']
         },
         {
             text: 'Formação do time',
             action: 'lineup',
-            keywords: ['formação', 'time', 'elenco', 'jogadores', 'lineup', 'line up', 'titulares']
+            keywords: ['quem','formação', 'time', 'elenco', 'jogadores', 'lineup', 'line up', 'titulares']
         },
     ];
 
@@ -85,6 +85,19 @@ export const useChat = () => {
 
         await addMessagesWithDelay(messagesToAdd, 500);
     };
+
+    const createPlayerCards = (players, isSubstitute = false) => {
+        return players.map(player => `
+          <div class="player-card ${isSubstitute ? 'substitute' : 'starter'}">
+            <img src="${player.playerImage}" alt="${player.name}" class="player-image" 
+                 onerror="this.src='https://static.draft5.gg/player/player_placeholder.png'"/>
+            <div class="player-info">
+              <span class="player-name">${player.name}</span>
+              <img src="${player.flagImage}" alt="Flag" class="player-flag"/>
+            </div>
+          </div>
+        `).join('');
+      };
 
     const calculateSimilarity = (str1, str2) => {
         const longer = str1.length > str2.length ? str1 : str2;
@@ -177,6 +190,39 @@ export const useChat = () => {
                     ];
                     break;
 
+                case 'lineup':
+                    const startingFive = data.slice(0, 5);
+                    const staffAndSubstitutes = data.slice(5);
+
+                    botMessages = [
+                        {
+                            text: 'Esta é a formação atual da FURIA:',
+                            from: 'bot',
+                            img: furioso
+                        },
+                        {
+                            text: `
+                    <div class="lineup-section">
+                      <h4>Jogadores Titulares</h4>
+                      <div class="lineup-container">
+                        ${createPlayerCards(startingFive)}
+                      </div>
+                    </div>
+                    ${staffAndSubstitutes.length > 0 ? `
+                      <div class="lineup-section">
+                        <h4>Coaches e Reservas</h4>
+                        <div class="lineup-container substitutes">
+                          ${createPlayerCards(staffAndSubstitutes, true)}
+                        </div>
+                      </div>
+                    ` : ''}
+                  `,
+                            from: 'bot',
+                            img: furioso
+                        }
+                    ];
+                    break;
+
                 case 'pastmatches':
                     botMessages = [
                         { text: 'Aqui estão os últimos jogos da Furia!', from: 'bot', img: furioso },
@@ -240,8 +286,9 @@ export const useChat = () => {
             const result = await login(email, input);
 
             if (result.success) {
+                const username = result.user?.username || 'Usuário';
                 await addMessagesWithDelay([
-                    { text: `Bem vindo ${auth.user.username}!`, from: 'bot', img: furioso }
+                    { text: `Bem vindo ${username}!`, from: 'bot', img: furioso }
                 ]);
                 setAuthStep(null);
                 await showOptions(true);

@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     return token && user ? { token, user: JSON.parse(user) } : null;
   });
 
-  const login = async (email, password) => {
+  const login = async (email, password) => {  
     try {
       const response = await api.post('/auth', { email, password });
       const { token, user } = response.data;
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       setAuth({ token, user });
       
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, message: error.response?.data?.message || 'Login failed' };
