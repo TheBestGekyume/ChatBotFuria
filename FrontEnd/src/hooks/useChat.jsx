@@ -22,7 +22,7 @@ export const useChat = () => {
 
     const [messages, setMessages] = useState([
         {
-            text: 'Olá, eu sou o Furioso. Diga algo para começarmos!',
+            text: 'Olá, eu sou o Furioso, o ChatBot da Furia. Diga algo para começarmos!',
             from: 'bot',
             img: furioso
         }
