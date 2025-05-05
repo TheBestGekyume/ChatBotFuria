@@ -1,13 +1,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const db = require('../configuration/database');
+const db = require('../cfg/database');
 const router = express.Router();
 
 const secret = process.env.JWT_SECRET;
 
 
-router.post('/login', async (req, res) => {
+router.post('/', async (req, res) => {
     const { email, password } = req.body;
 
     db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {

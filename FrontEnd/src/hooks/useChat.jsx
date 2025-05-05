@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import furioso from '../images/furioso.png';
+import { useAuth } from '../hooks/AuthContext';
 
 const api = axios.create({
     baseURL: 'http://localhost:3000/api',
@@ -13,9 +14,15 @@ const api = axios.create({
 });
 
 export const useChat = () => {
+    const { auth, login } = useAuth();
+    const [authStep, setAuthStep] = useState(null); // 'email', 'password', null
+    const [email, setEmail] = useState('');
+    const [skipAuth, setSkipAuth] = useState(false);
+    const [password, setPassword] = useState('');
+
     const [messages, setMessages] = useState([
         {
-            text: 'Olá, eu sou o Furioso. Diga algo para começarmos!',
+            text: 'Olá, eu sou o Furioso, o ChatBot da Furia. Diga algo para começarmos!',
             from: 'bot',
             img: furioso
         }
@@ -45,7 +52,7 @@ export const useChat = () => {
             text: 'Formação do time',
             action: 'lineup',
             keywords: ['formação', 'time', 'elenco', 'jogadores', 'lineup', 'line up', 'titulares']
-        }
+        },
     ];
 
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -65,9 +72,13 @@ export const useChat = () => {
             isOption: true
         }));
 
+        const welcomeMessage = auth?.user
+            ? `Olá ${auth.user.username}, o que você quer saber sobre o nosso time da Furia do CS2?`
+            : 'E então, o que você quer saber sobre o nosso time da Furia do CS2?';
+
         const messagesToAdd = showWelcomeMessage
             ? [
-                { text: 'E então, o que você quer saber sobre o nosso time da Furia do CS2?', from: 'bot', img: furioso },
+                { text: welcomeMessage, from: 'bot', img: furioso },
                 ...optionMessages
             ]
             : optionMessages;
@@ -75,7 +86,6 @@ export const useChat = () => {
         await addMessagesWithDelay(messagesToAdd, 500);
     };
 
-    // Função para calcular similaridade entre strings
     const calculateSimilarity = (str1, str2) => {
         const longer = str1.length > str2.length ? str1 : str2;
         const shorter = str1.length > str2.length ? str2 : str1;
@@ -85,7 +95,6 @@ export const useChat = () => {
         return (longer.length - calculateEditDistance(longer, shorter)) / parseFloat(longer.length);
     };
 
-    // Algoritmo de distância de edição (Levenshtein)
     const calculateEditDistance = (s1, s2) => {
         s1 = s1.toLowerCase();
         s2 = s2.toLowerCase();
@@ -115,27 +124,6 @@ export const useChat = () => {
     const findBestMatch = (input) => {
         const inputNormalized = normalizeText(input);
 
-        const options = [
-            {
-                text: 'Próximos jogos',
-                action: 'upcoming',
-                keywords: ['proximo', 'jogos', 'futuro', 'calendario', 'agenda', 'partidas',
-                    'joga', 'hoje', 'amanha', 'amanhã', 'proximos']
-            },
-            {
-                text: 'Últimos Jogos',
-                action: 'pastmatches',
-                keywords: ['ultimos', 'jogos', 'resultados', 'historico', 'passados', 'ontem', 'passado',
-                    'jogaram'
-                ]
-            },
-            {
-                text: 'Formação do time',
-                action: 'lineup',
-                keywords: ['formacao', 'time', 'elenco', 'jogadores', 'lineup', 'titulares']
-            }
-        ];
-
         // 1. Verifica correspondência exata (normalizada)
         const exactMatch = options.find(opt =>
             normalizeText(opt.text) === inputNormalized
@@ -145,9 +133,8 @@ export const useChat = () => {
         // 2. Verifica palavras-chave (normalizadas)
         const keywordMatch = options.find(opt =>
             opt.keywords.some(keyword =>
-                inputNormalized.includes(normalizeText(keyword))
-            )
-        );
+                inputNormalized.includes(normalizeText(keyword)))
+        )
         if (keywordMatch) return keywordMatch;
 
         // 3. Verifica similaridade (usando texto normalizado)
@@ -161,6 +148,7 @@ export const useChat = () => {
 
     const fetchData = async (action) => {
         setLoading(true);
+
         try {
             const response = await api.get(`/scraper/${action}`);
             const data = response.data;
@@ -169,113 +157,138 @@ export const useChat = () => {
             setMessages(prev => [
                 prev[0], // Mantém a mensagem inicial
                 ...prev.slice(1).filter(m => m.from === 'user'),
-                { text: `Você selecionou: ${options.find(opt => opt.action === action).text}`, from: 'user' }
+                {
+                    text: `Você selecionou: ${options.find(opt => opt.action === action).text}`,
+                    from: 'user'
+                }
             ]);
 
-            if (action === 'upcoming') {
-                await addMessagesWithDelay([
-                    { text: 'Aqui estão os Próximos jogos da FURIA!', from: 'bot', img: furioso },
-                    ...data.map(item => ({
-                        text: `📅 ${item.date}<br />
-                        🕒 ${item.time} | ${item.format}<br />
-                        🎮 ${item.teams[0].name} vs ${item.teams[1].name}<br />
-                        🏆 ${item.tournament.replace('\n', ' ').trim()}<br />
-                        🔗 <a href="${item.link}" target="_blank" rel="noopener noreferrer">Mais detalhes</a>`,
-                        from: 'bot',
-                        img: furioso
-                    }))
-                ], 300);
-            }
-            else if (action === 'lineup') {
-                const startingFive = data.slice(0, 5);
-                const staffAndSubstitutes = data.slice(5);
+            // Processamento dos dados
+            let botMessages = [];
+            switch (action) {
+                case 'upcoming':
+                    botMessages = [
+                        { text: 'Aqui estão os Próximos jogos da FURIA!', from: 'bot', img: furioso },
+                        ...data.map(item => ({
+                            text: `📅 ${item.date}<br />🕒 ${item.time} | ${item.format}<br />🎮 ${item.teams[0].name} vs ${item.teams[1].name}<br />🏆 ${item.tournament.replace('\n', ' ').trim()}<br />🔗 <a href="${item.link}" target="_blank" rel="noopener noreferrer">Mais detalhes</a>`,
+                            from: 'bot',
+                            img: furioso
+                        }))
+                    ];
+                    break;
 
-                await addMessagesWithDelay([
-                    { text: 'Esta é a formação atual da FURIA:', from: 'bot', img: furioso },
-                    {
-                        text: '<div class="lineup-section"><h4>Jogadores Titulares</h4>' +
-                            '<div class="lineup-container">' +
-                            startingFive.map(player => `
-                                <div class="player-card starter">
-                                    <img src="${player.playerImage}" alt="${player.name}" class="player-image" 
-                                         onerror="this.src='https://static.draft5.gg/player/player_placeholder.png'"/>
-                                    <div class="player-info">
-                                        <span class="player-name">${player.name}</span>
-                                        <img src="${player.flagImage}" alt="Flag" class="player-flag"/>
-                                    </div>
-                                </div>
-                            `).join('') + '</div></div>' +
-                            (staffAndSubstitutes.length > 0 ?
-                                '<div class="lineup-section"><h4>Coaches e Reservas</h4>' +
-                                '<div class="lineup-container substitutes">' +
-                                staffAndSubstitutes.map(player => `
-                                    <div class="player-card substitute">
-                                        <img src="${player.playerImage}" alt="${player.name}" class="player-image" 
-                                             onerror="this.src='https://static.draft5.gg/player/player_placeholder.png'"/>
-                                        <div class="player-info">
-                                            <span class="player-name">${player.name}</span>
-                                            <img src="${player.flagImage}" alt="Flag" class="player-flag"/>
-                                        </div>
-                                    </div>
-                                `).join('') + '</div></div>' : ''),
-                        from: 'bot',
-                        img: furioso
-                    }
-                ], 300);
-            }
-            else {
-                await addMessagesWithDelay([
-                    { text: `Aqui estão os últimos jogos da Furia!`, from: 'bot', img: furioso },
-                    ...data.map(item => ({
-                        text: `${item.date}<br />
-                        🕒 ${item.time} | ${item.format}<br />
-                        🎮 ${item.teams[0].name} (${item.teams[0].score}) vs ${item.teams[1].name} (${item.teams[1].score})<br />
-                        🏆 ${item.tournament.replace('\n', ' ').replace('Reveja os lances', '').trim()}<br />
-                        🔗 <a href="${item.link}" target="_blank" rel="noopener noreferrer">Assista aqui!</a>`,
-                        from: 'bot',
-                        img: furioso
-                    }))
-                ], 250);
+                case 'pastmatches':
+                    botMessages = [
+                        { text: 'Aqui estão os últimos jogos da Furia!', from: 'bot', img: furioso },
+                        ...data.map(item => ({
+                            text: `${item.date}<br />🕒 ${item.time} | ${item.format}<br />🎮 ${item.teams[0].name} (${item.teams[0].score}) vs ${item.teams[1].name} (${item.teams[1].score})<br />🏆 ${item.tournament.replace('\n', ' ').replace('Reveja os lances', '').trim()}<br />🔗 <a href="${item.link}" target="_blank" rel="noopener noreferrer">Assista aqui!</a>`,
+                            from: 'bot',
+                            img: furioso
+                        }))
+                    ];
+                    break;
+
+                default:
+                    throw new Error(`Ação desconhecida: ${action}`);
             }
 
+            await addMessagesWithDelay(botMessages, 300);
             await addMessagesWithDelay([
-                { text: 'Posso te ajudar com algo mais?', from: 'bot', img: furioso }
+                {
+                    text: auth?.user
+                        ? `${auth.user.username}, posso te ajudar com algo mais?`
+                        : 'Posso te ajudar com algo mais?',
+                    from: 'bot',
+                    img: furioso
+                }
             ]);
-
             await showOptions();
+
         } catch (error) {
             console.error('Fetch error:', error);
             await addMessagesWithDelay([
-                { text: 'Erro ao buscar dados. Tente novamente mais tarde.', from: 'bot', img: furioso }
+                { text: error.response?.data?.message || 'Erro ao buscar dados. Tente novamente mais tarde.', from: 'bot', img: furioso }
             ]);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSkipAuth = async () => {
+        setSkipAuth(true);
+        setAuthStep(null);
+        await addMessagesWithDelay([
+            { text: 'Você escolheu continuar sem login. Vamos começar!', from: 'bot', img: furioso }
+        ]);
+        await showOptions(true);
+    };
+
+    const handleAuthResponse = async (input) => {
+        if (authStep === 'email' && input.toLowerCase().includes('continuar sem login')) {
+            await handleSkipAuth();
+            return;
+        }
+
+        if (authStep === 'email') {
+            setEmail(input);
+            setAuthStep('password');
+            await addMessagesWithDelay([
+                { text: 'Ótimo! Agora digite sua senha:', from: 'bot', img: furioso }
+            ]);
+        } else if (authStep === 'password') {
+            setPassword(input);
+            const result = await login(email, input);
+
+            if (result.success) {
+                await addMessagesWithDelay([
+                    { text: `Bem vindo ${auth.user.username}!`, from: 'bot', img: furioso }
+                ]);
+                setAuthStep(null);
+                await showOptions(true);
+            } else {
+                await addMessagesWithDelay([
+                    { text: 'Credenciais inválidas. Vamos tentar novamente.', from: 'bot', img: furioso },
+                    { text: 'Digite seu email ou "continuar sem login"', from: 'bot', img: furioso }
+                ]);
+                setAuthStep('email');
+            }
+        }
+    };
+
     const sendMessage = async () => {
-        if (!inputValue.trim()) return;
+        if (!inputValue.trim() && !skipAuth) return;
 
         const messageText = inputValue.trim();
         setInputValue('');
-
-        // Adiciona mensagem do usuário
         setMessages(prev => [...prev, { text: messageText, from: 'user' }]);
+
+        // Fluxo de autenticação
+        if (authStep) {
+            await handleAuthResponse(messageText);
+            return;
+        }
 
         // Primeira interação
         if (messages.length <= 1) {
+            if (!auth && !skipAuth) {
+                await addMessagesWithDelay([
+                    { text: 'Para começar, você pode fazer login digitando o seu email cadastrado!', from: 'bot', img: furioso },
+                    { text: 'Se não quiser você pode digitar "continuar sem login"', from: 'bot', img: furioso }
+                ]);
+                setAuthStep('email');
+                return;
+            }
             await showOptions(true);
             return;
         }
 
-        // Encontra a melhor correspondência para a mensagem
+        // Processamento de mensagens normais
         const matchedOption = findBestMatch(messageText);
-
         if (matchedOption) {
             await fetchData(matchedOption.action);
         } else {
             await addMessagesWithDelay([
-                { text: 'Não consegui entender completamente. Você quis dizer alguma destas opções?', from: 'bot', img: furioso }
+                { text: 'Não entendi. Escolha uma das opções abaixo:', from: 'bot', img: furioso }
             ]);
             await showOptions();
         }
@@ -290,10 +303,7 @@ export const useChat = () => {
     const handleOptionSelect = async (optionText) => {
         const selectedOption = options.find(opt => opt.text === optionText);
         if (selectedOption) {
-            // Adiciona a mensagem do usuário diretamente
             setMessages(prev => [...prev, { text: optionText, from: 'user' }]);
-            
-            // Processa a mensagem imediatamente
             await fetchData(selectedOption.action);
         }
     };
@@ -305,7 +315,9 @@ export const useChat = () => {
         inputValue,
         setInputValue,
         loading,
-        options,
-        handleOptionSelect 
+        authStep,
+        skipAuth,
+        handleSkipAuth,
+        handleOptionSelect
     };
 };
